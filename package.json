@@ -1,0 +1,24 @@
+{
+  "name": "flockaround-web-render",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsdown",
+    "build-watch": "tsdown --watch",
+    "serve": "live-server --watch=\"dist/main.js\"",
+    "dev": "concurrently 'pn build-watch' 'pn serve'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^10.0.5",
+    "live-server": "^1.2.2",
+    "tsdown": "^0.23.0",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "pixi.js": "^8.22.0"
+  }
+}
