@@ -17,7 +17,9 @@ import shinyFragment from "./shader/shiny.frag";
 
 const DEBUG = false;
 
-const configName = "MuteSwan";
+const configName = "MarshWren";
+
+const viewfinderDimension = 400;
 
 export const initialisePixiApp = async () => {
   const app = new Application();
@@ -168,7 +170,7 @@ export const drawPixiBird = async () => {
       0,
       bodySheet.height, // x, y,
     ]),
-    uvs: new Float32Array(Object.values(bodyTextures.side.uvs)),
+    uvs: new Float32Array(Object.values(bodyTextures.towards.uvs)),
     indices: new Uint32Array([0, 1, 2, 0, 2, 3]),
   });
 
@@ -203,14 +205,14 @@ export const drawPixiBird = async () => {
   birdContainer.addChild(bodyMesh);
 
   birdContainer.x = app.screen.width / 2;
-  birdContainer.y = app.screen.height / 2 + 200;
+  birdContainer.y = app.screen.height / 2 + viewfinderDimension / 2;
 
   // birdContainer.scale.set(-1, 1);
 
   // birdContainer.width = 200;
   // birdContainer.height = 200;
 
-  headMesh.x = headOffset.x;
+  // headMesh.x = headOffset.x;
   headMesh.y = headOffset.y;
 
   bodyMesh.y = bodyOffset;
@@ -219,16 +221,62 @@ export const drawPixiBird = async () => {
   headMesh.zIndex = 1;
 
   if (DEBUG) {
-    const centerPoint = new Graphics().circle(0, 0, 5).fill("red");
-    birdContainer.addChild(centerPoint);
-    centerPoint.zIndex = 100;
+    const debugContainer = new Container();
+    debugContainer.pivot.x = debugContainer.width / 2;
+    debugContainer.pivot.y = debugContainer.height / 2;
+    debugContainer.zIndex = 100;
+
+    debugContainer.x = app.screen.width / 2;
+    debugContainer.y = app.screen.height / 2;
+
+    app.stage.addChild(debugContainer);
+
+    const centrePoint = new Graphics().circle(0, 0, 5).stroke({
+      width: 2,
+      color: "#00ff00",
+    });
+
+    const footPoint = new Graphics()
+      .circle(0, viewfinderDimension / 2, 5)
+      .stroke({
+        width: 2,
+        color: "red",
+      });
+    const headPoint = new Graphics()
+      .circle(0, -viewfinderDimension / 2, 5)
+      .stroke({
+        width: 2,
+        color: "yellow",
+      });
+
+    const encompassingCircle = new Graphics()
+      .circle(0, 0, viewfinderDimension / 2)
+      .stroke({
+        width: 2,
+        color: "rebeccapurple",
+      });
+
+    const viewfinderLine = new Graphics()
+      .moveTo(0, -viewfinderDimension / 2)
+      .lineTo(0, viewfinderDimension / 2)
+      .stroke({ width: 2, color: "white" });
+
+    debugContainer.addChild(
+      centrePoint,
+      footPoint,
+      headPoint,
+      encompassingCircle,
+      viewfinderLine,
+    );
   }
+
+  birdContainer.scale = 1 / ((headOffset.y * -1) / viewfinderDimension);
 
   const timeDelta = 1 / 60;
   let flapTimer = 0;
 
   let flying = false;
-  let flyUpPose = false;
+  let flyUpFrame = false;
 
   app.ticker.add((ticker) => {
     headShinyShader.resources.timeUniforms.uniforms.uTime += timeDelta;
@@ -239,16 +287,16 @@ export const drawPixiBird = async () => {
     if (flapTimer >= 1000) {
       flapTimer %= 1000;
       if (flying) {
-        if (!flyUpPose) {
+        if (!flyUpFrame) {
           bodyGeometry.uvs = new Float32Array(
             Object.values(bodyTextures.flyUp.uvs),
           );
-          flyUpPose = true;
+          flyUpFrame = true;
         } else {
           bodyGeometry.uvs = new Float32Array(
             Object.values(bodyTextures.flyDown.uvs),
           );
-          flyUpPose = false;
+          flyUpFrame = false;
         }
       }
     }

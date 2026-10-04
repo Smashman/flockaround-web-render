@@ -1,39 +1,3 @@
-interface BirdDimensionXY {
-  X: number;
-  Y: number;
-}
-
-interface BirdDimensionOffsets<Directions = BirdDimensionXY> {
-  foot_offset: Directions;
-  head_offset: Directions;
-  center_offset: Directions;
-  size_offset: number;
-}
-
-interface IDObject {
-  id: string;
-}
-
-interface PathObject {
-  path: string;
-}
-
-interface PerchPointWeights {
-  perch_point: number;
-  weight: number;
-}
-
-interface TimeWithVariance {
-  base: number;
-  variance: number;
-}
-
-interface RGB {
-  red: number;
-  green: number;
-  blue: number;
-}
-
 interface BirdConfig {
   do_not_spawn: boolean;
   display_name: IDObject;
@@ -93,4 +57,40 @@ interface BirdConfig {
     config_instance_id: number;
     config_type_id: "BirdSpecies";
   };
+}
+
+interface BirdDimensionXY {
+  X: number;
+  Y: number;
+}
+
+interface BirdDimensionOffsets<Directions = BirdDimensionXY> {
+  foot_offset: Directions;
+  head_offset: Directions;
+  center_offset: Directions;
+  size_offset: number;
+}
+
+interface IDObject {
+  id: string;
+}
+
+interface PathObject {
+  path: string;
+}
+
+interface PerchPointWeights {
+  perch_point: number;
+  weight: number;
+}
+
+interface TimeWithVariance {
+  base: number;
+  variance: number;
+}
+
+interface RGB {
+  red: number;
+  green: number;
+  blue: number;
 }
