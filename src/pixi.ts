@@ -14,6 +14,7 @@ import { getPathTail } from "./utils";
 import vertex from "./shader/default.vert";
 import defaultFragment from "./shader/default.frag";
 import shinyFragment from "./shader/shiny.frag";
+import type { BirdConfig } from "./types";
 
 const DEBUG = false;
 

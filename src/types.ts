@@ -1,4 +1,4 @@
-interface BirdConfig {
+export interface BirdConfig {
   do_not_spawn: boolean;
   display_name: IDObject;
   description: IDObject;
