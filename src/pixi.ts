@@ -19,14 +19,15 @@ const DEBUG = false;
 
 const configName = "MarshWren";
 
-const viewfinderDimension = 400;
+const canvasDimension = 800;
+const viewfinderDimension = canvasDimension * 0.45;
 
 export const initialisePixiApp = async () => {
   const app = new Application();
   await app.init({
     backgroundColor: "#348096",
-    width: 1000,
-    height: 1000,
+    width: canvasDimension,
+    height: canvasDimension,
     preference: "webgl",
   });
 
@@ -270,7 +271,18 @@ export const drawPixiBird = async () => {
     );
   }
 
-  birdContainer.scale = 1 / ((headOffset.y * -1) / viewfinderDimension);
+  const perchHeadOffset =
+    birdConfig.dimensions.perched_front_back.head_offset * 100;
+  const perchFootOffset =
+    birdConfig.dimensions.perched_front_back.foot_offset * 100;
+
+  const newScale =
+    1 /
+    ((headOffset.y * -1 + perchHeadOffset - perchFootOffset) /
+      viewfinderDimension);
+
+  birdContainer.scale = newScale;
+  birdContainer.y = birdContainer.y + perchFootOffset * newScale;
 
   const timeDelta = 1 / 60;
   let flapTimer = 0;
