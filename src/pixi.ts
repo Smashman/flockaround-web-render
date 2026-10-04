@@ -10,6 +10,7 @@ import {
   Shader,
   Texture,
 } from "pixi.js";
+import { getPathTail } from "./utils";
 
 const vertex = `in vec2 aPosition;
 in vec2 aUV;
@@ -89,9 +90,7 @@ void main() {
 
 const DEBUG = false;
 
-const configPath = "configs/BirdSpecies_MarshWren.json";
-const headSheetPath = "img/MarshWrenHead.png";
-const bodySheetPath = "img/MarshWrenBody.png";
+const configName = "HoodedMerganser";
 
 export const initialisePixiApp = async () => {
   const app = new Application();
@@ -110,8 +109,9 @@ export const initialisePixiApp = async () => {
 export const drawPixiBird = async () => {
   const app = await initialisePixiApp();
 
+  const configPath = `configs/BirdSpecies_${configName}.json`;
   const response = await fetch(configPath);
-  const birdConfig = await response.json();
+  const birdConfig = (await response.json()) as BirdConfig;
 
   const visualsConfig = birdConfig.visuals_config;
   const flapAnimationSpeed = birdConfig.flap_animation_speed;
@@ -121,6 +121,9 @@ export const drawPixiBird = async () => {
     y: visualsConfig.head_position_in_side_pose.y * 100 * -1,
   };
   const bodyOffset = visualsConfig.body_position_y * 100 * -1;
+
+  const headSheetPath = `img/${getPathTail(birdConfig.head_texture.path)}`;
+  const bodySheetPath = `img/${getPathTail(birdConfig.body_texture.path)}`;
 
   const birdContainer = new Container();
   birdContainer.pivot.x = birdContainer.width / 2;
