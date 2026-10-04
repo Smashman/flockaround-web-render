@@ -9,4 +9,8 @@ export default defineConfig({
   outputOptions: {
     entryFileNames: "main.js",
   },
+  loader: {
+    ".vert": "text",
+    ".frag": "text",
+  },
 });
