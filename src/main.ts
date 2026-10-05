@@ -1,5 +1,11 @@
 import { drawPixiBird } from "./pixi";
 
 (() => {
-  drawPixiBird();
+  const elementsToRender = document.getElementsByClassName("bird-web-render");
+
+  Array.from(elementsToRender).forEach((element) => {
+    if (element instanceof HTMLDivElement) {
+      drawPixiBird(element);
+    }
+  });
 })();

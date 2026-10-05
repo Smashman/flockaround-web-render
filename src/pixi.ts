@@ -1,29 +1,29 @@
 import {
   Application,
-  Assets,
   Container,
   GlProgram,
   Graphics,
+  ImageSource,
   Mesh,
   MeshGeometry,
   Rectangle,
   Shader,
   Texture,
 } from "pixi.js";
-import { getPathTail } from "./utils";
 import vertex from "./shader/default.vert";
 import defaultFragment from "./shader/default.frag";
 import shinyFragment from "./shader/shiny.frag";
 import type { BirdConfig } from "./types";
+import { DEBUG_MODE } from "./constants";
+import { logError } from "./log";
 
-const DEBUG = false;
+const canvasDimension = 500;
+// In-game camera viewfinder = 45%
+// const viewfinderDimension = canvasDimension * 0.45;
 
-const configName = "MarshWren";
+const viewfinderDimension = canvasDimension * 0.85;
 
-const canvasDimension = 800;
-const viewfinderDimension = canvasDimension * 0.45;
-
-export const initialisePixiApp = async () => {
+export const initialisePixiApp = async (renderElement: HTMLDivElement) => {
   const app = new Application();
   await app.init({
     backgroundColor: "#348096",
@@ -32,17 +32,18 @@ export const initialisePixiApp = async () => {
     preference: "webgl",
   });
 
-  document.body.append(app.canvas);
+  renderElement.append(app.canvas);
 
   return app;
 };
 
-export const drawPixiBird = async () => {
-  const app = await initialisePixiApp();
-
-  const configPath = `configs/BirdSpecies_${configName}.json`;
-  const response = await fetch(configPath);
-  const birdConfig = (await response.json()) as BirdConfig;
+export const drawPixiBird = async (renderElement: HTMLDivElement) => {
+  const configText = renderElement.querySelector(".config")?.textContent;
+  if (!configText) {
+    logError("Config text not available. Exiting");
+    return;
+  }
+  const birdConfig = JSON.parse(configText) as BirdConfig;
 
   const visualsConfig = birdConfig.visuals_config;
   const flapAnimationSpeed = birdConfig.flap_animation_speed;
@@ -53,16 +54,35 @@ export const drawPixiBird = async () => {
   };
   const bodyOffset = visualsConfig.body_position_y * 100 * -1;
 
-  const headSheetPath = `img/${getPathTail(birdConfig.head_texture.path)}`;
-  const bodySheetPath = `img/${getPathTail(birdConfig.body_texture.path)}`;
-
   const birdContainer = new Container();
   birdContainer.pivot.x = birdContainer.width / 2;
   birdContainer.pivot.y = birdContainer.height / 2;
 
+  const headSheetElement = renderElement.querySelector(".head");
+  if (!headSheetElement || !(headSheetElement instanceof HTMLImageElement)) {
+    logError("Head spritesheet not available. Exiting");
+    return;
+  }
+
+  const bodySheetElement = renderElement.querySelector(".body");
+  if (!bodySheetElement || !(bodySheetElement instanceof HTMLImageElement)) {
+    logError("Body spritesheet not available. Exiting");
+    return;
+  }
+
+  // Ensure images are loaded
+  await Promise.all(
+    Array.from([headSheetElement, bodySheetElement]).map(
+      (image) =>
+        new Promise((resolve) => image.addEventListener("load", resolve)),
+    ),
+  );
+
+  const app = await initialisePixiApp(renderElement);
+
   app.stage.addChild(birdContainer);
 
-  const headSheet = await Assets.load<Texture>(headSheetPath);
+  const headSheet = new ImageSource({ resource: headSheetElement });
   const headFrames = 3;
   const headWidth = headSheet.width / headFrames;
 
@@ -130,7 +150,7 @@ export const drawPixiBird = async () => {
   // headMesh.rotation = Math.PI / 4;
   // headMesh.scale.set(-1, 1);
 
-  const bodySheet = await Assets.load<Texture>(bodySheetPath);
+  const bodySheet = new ImageSource({ resource: bodySheetElement });
   const bodyFrames = 5;
   const bodyWidth = bodySheet.width / bodyFrames;
 
@@ -222,7 +242,7 @@ export const drawPixiBird = async () => {
   bodyMesh.zIndex = 0;
   headMesh.zIndex = 1;
 
-  if (DEBUG) {
+  if (DEBUG_MODE) {
     const debugContainer = new Container();
     debugContainer.pivot.x = debugContainer.width / 2;
     debugContainer.pivot.y = debugContainer.height / 2;
@@ -285,13 +305,14 @@ export const drawPixiBird = async () => {
   birdContainer.scale = newScale;
   birdContainer.y = birdContainer.y + perchFootOffset * newScale;
 
-  const timeDelta = 1 / 60;
   let flapTimer = 0;
 
   let flying = false;
   let flyUpFrame = false;
 
   app.ticker.add((ticker) => {
+    const timeDelta = ticker.deltaMS / 1000;
+
     headShinyShader.resources.timeUniforms.uniforms.uTime += timeDelta;
     bodyShinyShader.resources.timeUniforms.uniforms.uTime += timeDelta;
 
