@@ -2,11 +2,12 @@
   "name": "flockaround-web-render",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/main.js",
+  "type": "module",
   "scripts": {
     "build": "tsdown",
     "build-watch": "tsdown --watch",
-    "serve": "live-server --watch=\"dist/main.js\"",
+    "serve": "live-server --watch=\"dist/main.js,index.html\"",
     "dev": "concurrently 'pn build-watch' 'pn serve'"
   },
   "keywords": [],

@@ -15,9 +15,9 @@ import defaultFragment from "./shader/default.frag";
 import shinyFragment from "./shader/shiny.frag";
 import type { BirdConfig } from "./types";
 import { DEBUG_MODE } from "./constants";
-import { logError } from "./log";
+import { RenderError } from "./log";
 
-const canvasDimension = 500;
+const canvasDimension = 300;
 // In-game camera viewfinder = 45%
 // const viewfinderDimension = canvasDimension * 0.45;
 
@@ -37,16 +37,49 @@ const initialisePixiApp = async (renderElement: HTMLDivElement) => {
   return app;
 };
 
-export const drawPixiBird = async (renderElement: HTMLDivElement) => {
+const getConfigAndImages = async (renderElement: HTMLDivElement) => {
   const configText = renderElement.querySelector(".config")?.textContent;
   if (!configText) {
-    logError("Config text not available. Exiting");
-    return;
+    throw new RenderError("Config text not available. Exiting");
   }
   const birdConfig = JSON.parse(configText) as BirdConfig;
 
+  const headSheetElement = renderElement.querySelector(".head-spritesheet");
+  if (!headSheetElement || !(headSheetElement instanceof HTMLImageElement)) {
+    throw new RenderError("Head spritesheet not available. Exiting");
+  }
+
+  const bodySheetElement = renderElement.querySelector(".body-spritesheet");
+  if (!bodySheetElement || !(bodySheetElement instanceof HTMLImageElement)) {
+    throw new RenderError("Body spritesheet not available. Exiting");
+  }
+
+  // Ensure images are loaded
+  await Promise.all(
+    [headSheetElement, bodySheetElement].map(
+      (element) =>
+        new Promise<void>((resolve, reject) => {
+          if (element.complete) {
+            resolve();
+            return;
+          }
+          element.loading = "eager";
+          element.addEventListener("load", () => resolve());
+          element.addEventListener("error", () => {
+            reject(new RenderError("Image failed to load. Exiting"));
+          });
+        }),
+    ),
+  );
+
+  return { birdConfig, headSheetElement, bodySheetElement };
+};
+
+export const drawBird = async (renderElement: HTMLDivElement) => {
+  const { birdConfig, headSheetElement, bodySheetElement } =
+    await getConfigAndImages(renderElement);
   const visualsConfig = birdConfig.visuals_config;
-  const flapAnimationSpeed = birdConfig.flap_animation_speed;
+  const flapAnimationSpeed = birdConfig.flap_animation_speed || 10;
 
   const headOffset = {
     x: visualsConfig.head_position_in_side_pose.x * 100,
@@ -54,31 +87,11 @@ export const drawPixiBird = async (renderElement: HTMLDivElement) => {
   };
   const bodyOffset = visualsConfig.body_position_y * 100 * -1;
 
+  const app = await initialisePixiApp(renderElement);
+
   const birdContainer = new Container();
   birdContainer.pivot.x = birdContainer.width / 2;
   birdContainer.pivot.y = birdContainer.height / 2;
-
-  const headSheetElement = renderElement.querySelector(".head");
-  if (!headSheetElement || !(headSheetElement instanceof HTMLImageElement)) {
-    logError("Head spritesheet not available. Exiting");
-    return;
-  }
-
-  const bodySheetElement = renderElement.querySelector(".body");
-  if (!bodySheetElement || !(bodySheetElement instanceof HTMLImageElement)) {
-    logError("Body spritesheet not available. Exiting");
-    return;
-  }
-
-  // Ensure images are loaded
-  await Promise.all(
-    Array.from([headSheetElement, bodySheetElement]).map(
-      (image) =>
-        new Promise((resolve) => image.addEventListener("load", resolve)),
-    ),
-  );
-
-  const app = await initialisePixiApp(renderElement);
 
   app.stage.addChild(birdContainer);
 

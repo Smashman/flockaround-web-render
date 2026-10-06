@@ -4,6 +4,7 @@ export default defineConfig({
   entry: ["./src/main.ts"],
   deps: {
     alwaysBundle: "pixi.js",
+    onlyBundle: false,
   },
   format: "iife",
   outputOptions: {
