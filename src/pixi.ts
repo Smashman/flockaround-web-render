@@ -23,7 +23,7 @@ const canvasDimension = 500;
 
 const viewfinderDimension = canvasDimension * 0.85;
 
-export const initialisePixiApp = async (renderElement: HTMLDivElement) => {
+const initialisePixiApp = async (renderElement: HTMLDivElement) => {
   const app = new Application();
   await app.init({
     backgroundColor: "#348096",
