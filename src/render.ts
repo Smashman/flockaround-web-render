@@ -152,10 +152,14 @@ export const renderBird = async (renderElement: HTMLDivElement) => {
   };
 
   const poseDropdown = document.createElement("select");
-  Object.entries(bird.poseOptions).forEach(([value, label]) => {
+  poseDropdown.name = "Pose";
+  bird.poseOptions.forEach((poseName) => {
     const option = document.createElement("option");
-    option.textContent = label;
-    option.value = value;
+    option.textContent =
+      poseName === "moving"
+        ? bird.movingPoseLabel
+        : `${poseName.charAt(0).toUpperCase()}${poseName.substring(1)}`;
+    option.value = poseName;
     poseDropdown.append(option);
   });
 

@@ -17,16 +17,11 @@ export interface BirdConfig {
     body_position_y: number;
   };
   dimensions: {
-    perched_front_back: {
-      foot_offset: number;
-      head_offset: number;
-      center_offset: number;
-      size_offset: number;
-    };
-    perched_side: BirdDimensionOffsets;
-    flying_side: BirdDimensionOffsets;
-    sideways: BirdDimensionOffsets;
-    soaring: BirdDimensionOffsets<number>;
+    perched_front_back: OneDimensionalBirdConfigDimensionOffsets;
+    perched_side: TwoDimensionalBirdConfigDimensionOffsets;
+    flying_side: TwoDimensionalBirdConfigDimensionOffsets;
+    sideways: TwoDimensionalBirdConfigDimensionOffsets;
+    soaring: OneDimensionalBirdConfigDimensionOffsets;
   };
   flap_animation_speed: number;
   tweet_sounds: PathObject[];
@@ -59,17 +54,24 @@ export interface BirdConfig {
   };
 }
 
-interface BirdDimensionXY {
+export interface BirdDimensionXY {
   X: number;
   Y: number;
 }
 
-interface BirdDimensionOffsets<Directions = BirdDimensionXY> {
+export interface BirdConfigDimensionOffsets<
+  Directions extends BirdDimensionXY | number,
+> {
   foot_offset: Directions;
   head_offset: Directions;
   center_offset: Directions;
   size_offset: number;
 }
+
+export type OneDimensionalBirdConfigDimensionOffsets =
+  BirdConfigDimensionOffsets<number>;
+export type TwoDimensionalBirdConfigDimensionOffsets =
+  BirdConfigDimensionOffsets<BirdDimensionXY>;
 
 interface IDObject {
   id: string;
