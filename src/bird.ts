@@ -13,7 +13,17 @@ import vertex from "./shader/default.vert";
 import shinyFragment from "./shader/shiny.frag";
 import type { BirdConfig } from "./types";
 
-type BirdPose = "side" | "towards" | "away" | "moving";
+const birdPoseNames = ["side", "towards", "away", "moving"] as const;
+export type BirdPose = (typeof birdPoseNames)[number];
+
+type PoseOptions = { [K in BirdPose]: string };
+
+const birdPoseOptions: PoseOptions = {
+  side: "Sideways",
+  away: "Away",
+  towards: "Towards",
+  moving: "Flying",
+};
 
 type Textures<Keys extends string> = {
   [K in Keys]: Texture;
@@ -41,11 +51,16 @@ interface BirdConstructorParams {
   headSheetElement: HTMLImageElement;
   bodySheetElement: HTMLImageElement;
   viewfinderDimension: number;
-  defaultContainerPosition: Position;
 }
 
 export class Bird {
-  readonly pose: BirdPose = "side";
+  _pose: BirdPose = "side";
+
+  get pose() {
+    return this._pose;
+  }
+
+  readonly poseOptions: PoseOptions = birdPoseOptions;
 
   readonly headFrame: HeadFrame = "side";
   readonly bodyFrame: BodyFrame = "towards";
@@ -57,7 +72,7 @@ export class Bird {
   readonly bodyFrameCount: number = 5;
 
   readonly container: Container;
-  readonly defaultContainerPosition: Position = { x: 0, y: 0 };
+  readonly defaultPosition: Position = { x: 0, y: 0 };
 
   readonly config: BirdConfig;
   readonly viewfinderDimension: number;
@@ -90,12 +105,13 @@ export class Bird {
     headSheetElement,
     bodySheetElement,
     viewfinderDimension,
-    defaultContainerPosition,
   }: BirdConstructorParams) {
     this.config = config;
     this.viewfinderDimension = viewfinderDimension;
 
-    this.defaultContainerPosition = defaultContainerPosition;
+    // if (config.movingPoseLabel) {
+    //   this.poseOptions.moving = config.movingPoseLabel;
+    // }
 
     this.flapAnimationSpeed = config.flap_animation_speed || 10;
     this.hasSoaringPose = config.has_soaring_pose || false;
@@ -117,12 +133,6 @@ export class Bird {
     };
 
     this.container = new Container();
-    this.container.pivot.x = this.container.width / 2;
-    this.container.pivot.y = this.container.height / 2;
-    this.setContainerPosition(
-      this.defaultContainerPosition.x,
-      this.defaultContainerPosition.y,
-    );
 
     const {
       textures: headTextures,
@@ -182,8 +192,7 @@ export class Bird {
 
     this.bodyMesh.y = this.bodyOffset;
 
-    this.container.addChild(this.headMesh);
-    this.container.addChild(this.bodyMesh);
+    this.container.addChild(this.headMesh, this.bodyMesh);
 
     this.setPose("towards");
   }
@@ -218,9 +227,13 @@ export class Bird {
     return { textures, width: frameWidth, height: frameHeight };
   }
 
-  private setContainerPosition(x: number, y: number) {
-    this.container.x = x;
-    this.container.y = y;
+  private setScale(scale: number) {
+    this.container.scale = scale;
+  }
+
+  private setPosition(position: Partial<Position>) {
+    this.container.x = position.x || this.defaultPosition.x;
+    this.container.y = position.y || this.defaultPosition.y;
   }
 
   private createGeometry(
@@ -304,27 +317,79 @@ export class Bird {
     this.headMesh.zIndex = 1;
   }
 
+  private setHeadFrame(frame: HeadFrame) {
+    this.headGeometry.uvs = new Float32Array(
+      Object.values(this.headTextures[frame].uvs),
+    );
+  }
+
+  private setBodyFrame(frame: BodyFrame) {
+    this.bodyGeometry.uvs = new Float32Array(
+      Object.values(this.bodyTextures[frame].uvs),
+    );
+  }
+
+  private calculateFrontBackScalePosition() {
+    const newScale =
+      1 /
+      ((this.headOffset.y * -1 +
+        this.frontBackOffsets.head -
+        this.frontBackOffsets.foot) /
+        this.viewfinderDimension);
+    return {
+      scale: newScale,
+      position: this.frontBackOffsets.foot * newScale,
+    };
+  }
+
+  private poseSetters: { [K in BirdPose]: () => void } = {
+    side: () => {
+      this.setBodyBehind();
+      this.setHeadFrame("side");
+      this.setBodyFrame("side");
+
+      this.setScale(1);
+      this.setPosition(this.defaultPosition);
+    },
+    towards: () => {
+      this.setBodyBehind();
+      this.setHeadFrame("towards");
+      this.setBodyFrame("towards");
+
+      const { scale, position } = this.calculateFrontBackScalePosition();
+
+      this.setScale(scale);
+      this.setPosition({ y: position });
+    },
+    away: () => {
+      this.setHeadBehind();
+      this.setHeadFrame("away");
+      this.setBodyFrame("away");
+
+      const { scale, position } = this.calculateFrontBackScalePosition();
+
+      this.setScale(scale);
+      this.setPosition({ y: position });
+    },
+    moving: () => {
+      this.setBodyBehind();
+      this.setHeadFrame("side");
+      this.setBodyFrame("move1");
+
+      this.setScale(1);
+      this.setPosition(this.defaultPosition);
+    },
+  };
+
   setPose(pose: BirdPose) {
+    this._pose = pose;
     if (pose === "side" || pose === "moving") {
       this.headMesh.x = this.headOffset.x;
     } else {
       this.headMesh.x = 0;
     }
 
-    if (pose === "towards") {
-      this.setBodyBehind();
-
-      const newScale =
-        1 /
-        ((this.headOffset.y * -1 +
-          this.frontBackOffsets.head -
-          this.frontBackOffsets.foot) /
-          this.viewfinderDimension);
-
-      this.container.scale = newScale;
-      this.container.y =
-        this.defaultContainerPosition.y + this.frontBackOffsets.foot * newScale;
-    }
+    this.poseSetters[pose]();
   }
 
   setShiny(shiny = true) {

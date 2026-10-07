@@ -1,5 +1,5 @@
 import { Application, Container, Graphics } from "pixi.js";
-import { Bird } from "./bird";
+import { Bird, type BirdPose } from "./bird";
 import { DEBUG_MODE } from "./constants";
 import { RenderError } from "./log";
 import type { BirdConfig } from "./types";
@@ -68,35 +68,34 @@ const getConfigAndImages = async (renderElement: HTMLDivElement) => {
   return { config, headSheetElement, bodySheetElement };
 };
 
-export const drawBird = async (renderElement: HTMLDivElement) => {
+export const renderBird = async (renderElement: HTMLDivElement) => {
   const { config, headSheetElement, bodySheetElement } =
     await getConfigAndImages(renderElement);
 
   const app = await initialisePixiApp(renderElement);
 
-  const defaultBirdContainerPosition = {
-    x: app.screen.width / 2,
-    y: app.screen.height / 2 + viewfinderDimension / 2,
-  };
+  const mainContainer = new Container();
+  mainContainer.width = viewfinderDimension;
+  mainContainer.height = viewfinderDimension;
+  mainContainer.position.x = canvasDimension / 2;
+  mainContainer.position.y = canvasDimension / 2 + viewfinderDimension / 2;
+
+  app.stage.addChild(mainContainer);
 
   const bird = new Bird({
     config,
     headSheetElement,
     bodySheetElement,
     viewfinderDimension,
-    defaultContainerPosition: defaultBirdContainerPosition,
   });
 
-  app.stage.addChild(bird.container);
+  mainContainer.addChild(bird.container);
 
   if (DEBUG_MODE) {
     const debugContainer = new Container();
-    debugContainer.pivot.x = debugContainer.width / 2;
-    debugContainer.pivot.y = debugContainer.height / 2;
     debugContainer.zIndex = 100;
-
-    debugContainer.x = app.screen.width / 2;
-    debugContainer.y = app.screen.height / 2;
+    debugContainer.x = canvasDimension / 2;
+    debugContainer.y = canvasDimension / 2;
 
     app.stage.addChild(debugContainer);
 
@@ -149,6 +148,23 @@ export const drawBird = async (renderElement: HTMLDivElement) => {
       bird.setShiny();
     } else {
       bird.setShiny(false);
+    }
+  };
+
+  const poseDropdown = document.createElement("select");
+  Object.entries(bird.poseOptions).forEach(([value, label]) => {
+    const option = document.createElement("option");
+    option.textContent = label;
+    option.value = value;
+    poseDropdown.append(option);
+  });
+
+  renderElement.append(poseDropdown);
+
+  poseDropdown.value = bird.pose;
+  poseDropdown.onchange = (e) => {
+    if (e.target && e.target instanceof HTMLSelectElement && e.target.value) {
+      bird.setPose(e.target.value as BirdPose);
     }
   };
 
