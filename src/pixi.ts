@@ -1,8 +1,8 @@
 import { Application, Container, Graphics } from "pixi.js";
-import type { BirdConfig } from "./types";
+import { Bird } from "./bird";
 import { DEBUG_MODE } from "./constants";
 import { RenderError } from "./log";
-import { Bird } from "./bird";
+import type { BirdConfig } from "./types";
 
 const canvasDimension = 300;
 // In-game camera viewfinder = 45%

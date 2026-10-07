@@ -7,12 +7,11 @@ import {
   Rectangle,
   Shader,
   Texture,
-  type Application,
 } from "pixi.js";
-import type { BirdConfig } from "./types";
-import vertex from "./shader/default.vert";
 import defaultFragment from "./shader/default.frag";
+import vertex from "./shader/default.vert";
 import shinyFragment from "./shader/shiny.frag";
+import type { BirdConfig } from "./types";
 
 type BirdPose = "side" | "towards" | "away" | "moving";
 
