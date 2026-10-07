@@ -19,10 +19,10 @@ export type BirdPose = (typeof birdPoseNames)[number];
 type PoseOptions = { [K in BirdPose]: string };
 
 const birdPoseOptions: PoseOptions = {
-  side: "Sideways",
-  away: "Away",
   towards: "Towards",
+  side: "Sideways",
   moving: "Flying",
+  away: "Away",
 };
 
 type Textures<Keys extends string> = {
