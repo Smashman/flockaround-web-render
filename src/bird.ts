@@ -21,6 +21,8 @@ import type {
 const birdPoseNames = ["front", "side", "moving", "back", "soar"] as const;
 export type BirdPose = (typeof birdPoseNames)[number];
 
+type MovingPoseLabel = "Flying" | "Running" | "Swimming";
+
 type Textures<Keys extends string> = {
   [K in Keys]: Texture;
 };
@@ -59,18 +61,27 @@ interface BirdConstructorParams {
   viewfinderDimension: number;
 }
 
+const defaultValues: {
+  pose: BirdPose;
+  headFrame: HeadFrame;
+  bodyFrame: BodyFrame;
+  movingPoseLabel: MovingPoseLabel;
+} = {
+  pose: "side",
+  headFrame: "side",
+  bodyFrame: "side",
+  movingPoseLabel: "Flying",
+};
+
 export class Bird {
-  _pose: BirdPose = "side";
+  _pose: BirdPose = defaultValues.pose;
 
   get pose() {
     return this._pose;
   }
 
   readonly poseOptions: BirdPose[];
-  movingPoseLabel = "Flying";
-
-  readonly headFrame: HeadFrame = "side";
-  readonly bodyFrame: BodyFrame = "towards";
+  movingPoseLabel = defaultValues.movingPoseLabel;
 
   readonly flapAnimationSpeed: number = 10;
   readonly hasSoaringPose: boolean = false;
@@ -188,16 +199,20 @@ export class Bird {
     this.headGeometry = this.createGeometry(
       this.headFrameWidth,
       this.headFrameHeight,
-      this.headTextures[this.headFrame],
+      this.headTextures[defaultValues.headFrame],
     );
     this.bodyGeometry = this.createGeometry(
       this.bodyFrameWidth,
       this.bodyFrameHeight,
-      this.bodyTextures[this.bodyFrame],
+      this.bodyTextures[defaultValues.bodyFrame],
     );
 
-    this.headShaders = this.createShaders(this.headTextures[this.headFrame]);
-    this.bodyShaders = this.createShaders(this.bodyTextures[this.bodyFrame]);
+    this.headShaders = this.createShaders(
+      this.headTextures[defaultValues.headFrame],
+    );
+    this.bodyShaders = this.createShaders(
+      this.bodyTextures[defaultValues.bodyFrame],
+    );
 
     this.headMesh = this.createMesh({
       geometry: this.headGeometry,
@@ -219,7 +234,7 @@ export class Bird {
 
     this.container.addChild(this.headMesh, this.bodyMesh);
 
-    this.setPose("front");
+    this.setPose(defaultValues.pose);
   }
 
   private createTextures(
@@ -361,62 +376,96 @@ export class Bird {
         this.viewfinderDimension);
     return {
       scale: newScale,
-      position: offsets.foot * newScale,
+      yPosition: offsets.foot * newScale,
+    };
+  }
+
+  private calculateTwoDimensionScalePosition(offsets: TwoDimensionalOffsets) {
+    const oppositeLength = this.headOffset.y + offsets.head.y - offsets.foot.y;
+    const adjacentLength = offsets.foot.x + this.headOffset.x + offsets.head.x;
+
+    const hypotenuseLength = Math.sqrt(
+      Math.pow(adjacentLength, 2) + Math.pow(oppositeLength, 2),
+    );
+
+    const newScale = this.viewfinderDimension / hypotenuseLength;
+
+    const midPointOfHypotenuse = {
+      x: this.headOffset.x + offsets.head.x - adjacentLength / 2,
+      y: offsets.foot.y + oppositeLength / 2,
+    };
+
+    const newPosition = {
+      x: -midPointOfHypotenuse.x * newScale,
+      y: -midPointOfHypotenuse.y * newScale - this.viewfinderDimension / 2,
+    };
+
+    return {
+      scale: newScale,
+      position: newPosition,
     };
   }
 
   private poseSetters: { [K in BirdPose]: () => void } = {
     side: () => {
       this.setBodyBehind();
-      this.setHeadFrame("side");
+      this.setHeadFrame("towards");
       this.setBodyFrame("side");
 
-      this.setScale(1);
-      this.setPosition(this.defaultPosition);
+      const { scale, position } = this.calculateTwoDimensionScalePosition(
+        this.sideOffsets,
+      );
+
+      this.setScale(scale);
+      this.setPosition(position);
     },
     front: () => {
       this.setBodyBehind();
-      this.setHeadFrame("side");
+      this.setHeadFrame("towards");
       this.setBodyFrame("towards");
 
-      const { scale, position } = this.calculateOneDimensionScalePosition(
+      const { scale, yPosition } = this.calculateOneDimensionScalePosition(
         this.frontBackOffsets,
       );
 
       this.setScale(scale);
-      this.setPosition({ y: position });
+      this.setPosition({ y: yPosition });
     },
     back: () => {
       this.setHeadBehind();
       this.setHeadFrame("away");
       this.setBodyFrame("away");
 
-      const { scale, position } = this.calculateOneDimensionScalePosition(
+      const { scale, yPosition } = this.calculateOneDimensionScalePosition(
         this.frontBackOffsets,
       );
 
       this.setScale(scale);
-      this.setPosition({ y: position });
+      this.setPosition({ y: yPosition });
     },
     moving: () => {
       this.setBodyBehind();
       this.setHeadFrame("side");
       this.setBodyFrame("move1");
 
-      this.setScale(1);
-      this.setPosition(this.defaultPosition);
+      const { scale, position } = this.calculateTwoDimensionScalePosition(
+        this.movingOffsets,
+      );
+
+      this.setScale(scale);
+      this.setPosition(position);
     },
     soar: () => {
       this.setBodyBehind();
       this.setHeadFrame("soar");
       this.setBodyFrame("soar");
 
-      const { scale, position } = this.calculateOneDimensionScalePosition(
+      const { scale, yPosition } = this.calculateOneDimensionScalePosition(
         this.soarOffsets,
       );
 
       this.setScale(scale);
-      this.setPosition({ y: position });
+      this.setPosition({ y: yPosition });
     },
   };
 
@@ -454,7 +503,7 @@ export class Bird {
   static configPositionToLocal(position: BirdDimensionXY): Position {
     return {
       x: position.X * 100,
-      y: position.Y * 100,
+      y: position.Y * -100,
     };
   }
   static twoDimensionalConfigOffsetsToLocal(
