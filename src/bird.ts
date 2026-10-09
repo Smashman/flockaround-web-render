@@ -73,24 +73,36 @@ const defaultValues: {
   movingPoseLabel: "Flying",
 };
 
+const defaultPosition: Position = { x: 0, y: 0 };
+
 export class Bird {
-  _pose: BirdPose = defaultValues.pose;
+  private _pose: BirdPose = defaultValues.pose;
 
   get pose() {
     return this._pose;
   }
 
+  private _position: Position = defaultPosition;
+
+  get position() {
+    return this._position;
+  }
+
+  private headFrame: HeadFrame = defaultValues.headFrame;
+  private bodyFrame: BodyFrame = defaultValues.bodyFrame;
+
   readonly poseOptions: BirdPose[];
   movingPoseLabel = defaultValues.movingPoseLabel;
 
-  readonly flapAnimationSpeed: number = 10;
+  readonly movementAnimationSpeed: number = 10;
+  movementTimer: number = 0;
+
   readonly hasSoaringPose: boolean = false;
 
   readonly headFrameCount: number = 3;
   readonly bodyFrameCount: number = 5;
 
   readonly container: Container;
-  readonly defaultPosition: Position = { x: 0, y: 0 };
 
   readonly config: BirdConfig;
   readonly viewfinderDimension: number;
@@ -135,7 +147,7 @@ export class Bird {
     //   this.movingPoseLabel = config.movingPoseLabel;
     // }
 
-    this.flapAnimationSpeed = config.flap_animation_speed || 10;
+    this.movementAnimationSpeed = config.flap_animation_speed || 10;
     this.hasSoaringPose = config.has_soaring_pose || false;
 
     if (this.hasSoaringPose) {
@@ -199,20 +211,16 @@ export class Bird {
     this.headGeometry = this.createGeometry(
       this.headFrameWidth,
       this.headFrameHeight,
-      this.headTextures[defaultValues.headFrame],
+      this.headTextures[this.headFrame],
     );
     this.bodyGeometry = this.createGeometry(
       this.bodyFrameWidth,
       this.bodyFrameHeight,
-      this.bodyTextures[defaultValues.bodyFrame],
+      this.bodyTextures[this.bodyFrame],
     );
 
-    this.headShaders = this.createShaders(
-      this.headTextures[defaultValues.headFrame],
-    );
-    this.bodyShaders = this.createShaders(
-      this.bodyTextures[defaultValues.bodyFrame],
-    );
+    this.headShaders = this.createShaders(this.headTextures[this.headFrame]);
+    this.bodyShaders = this.createShaders(this.bodyTextures[this.bodyFrame]);
 
     this.headMesh = this.createMesh({
       geometry: this.headGeometry,
@@ -272,8 +280,8 @@ export class Bird {
   }
 
   private setPosition(position: Partial<Position>) {
-    this.container.x = position.x || this.defaultPosition.x;
-    this.container.y = position.y || this.defaultPosition.y;
+    this.container.x = position.x || defaultPosition.x;
+    this.container.y = position.y || defaultPosition.y;
   }
 
   private createGeometry(
@@ -341,13 +349,6 @@ export class Bird {
     });
   }
 
-  updateTime(deltaMS: number) {
-    const timeDelta = deltaMS / 1000;
-
-    this.headShaders.shiny.resources.timeUniforms.uniforms.uTime += timeDelta;
-    this.bodyShaders.shiny.resources.timeUniforms.uniforms.uTime += timeDelta;
-  }
-
   private setHeadBehind() {
     this.bodyMesh.zIndex = 1;
     this.headMesh.zIndex = 0;
@@ -361,12 +362,14 @@ export class Bird {
     this.headGeometry.uvs = new Float32Array(
       Object.values(this.headTextures[frame].uvs),
     );
+    this.headFrame = frame;
   }
 
   private setBodyFrame(frame: BodyFrame) {
     this.bodyGeometry.uvs = new Float32Array(
       Object.values(this.bodyTextures[frame].uvs),
     );
+    this.bodyFrame = frame;
   }
 
   private calculateOneDimensionScalePosition(offsets: OneDimensionalOffsets) {
@@ -487,6 +490,26 @@ export class Bird {
     } else {
       this.headMesh.shader = this.headShaders.default;
       this.bodyMesh.shader = this.bodyShaders.default;
+    }
+  }
+
+  updateTime(deltaMS: number) {
+    const timeDelta = deltaMS / 1000;
+
+    this.headShaders.shiny.resources.timeUniforms.uniforms.uTime += timeDelta;
+    this.bodyShaders.shiny.resources.timeUniforms.uniforms.uTime += timeDelta;
+
+    this.movementTimer += deltaMS * this.movementAnimationSpeed;
+
+    if (this.movementTimer >= 1000) {
+      this.movementTimer %= 1000;
+      if (this.pose === "moving") {
+        if (this.bodyFrame === "move1") {
+          this.setBodyFrame("move2");
+        } else {
+          this.setBodyFrame("move1");
+        }
+      }
     }
   }
 
