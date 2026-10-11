@@ -1,8 +1,9 @@
 import { Application, Container, Graphics } from "pixi.js";
-import { Bird, type BirdPose } from "./bird";
+import { Bird, type BirdPose, type Direction } from "./bird";
 import { DEBUG_MODE } from "./constants";
 import { RenderError } from "./log";
 import type { BirdConfig } from "./types";
+import { capitaliseFirstLetter } from "./utils";
 
 const canvasDimension = 300;
 // In-game camera viewfinder = 45%
@@ -138,12 +139,10 @@ export const renderBird = async (renderElement: HTMLDivElement) => {
     );
   }
 
-  const checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
+  const shinyCheckbox = document.createElement("input");
+  shinyCheckbox.type = "checkbox";
 
-  renderElement.append(checkbox);
-
-  checkbox.onchange = (e) => {
+  shinyCheckbox.onchange = (e) => {
     if (e.target && e.target instanceof HTMLInputElement && e.target.checked) {
       bird.setShiny();
     } else {
@@ -158,12 +157,10 @@ export const renderBird = async (renderElement: HTMLDivElement) => {
     option.textContent =
       poseName === "moving"
         ? bird.movingPoseLabel
-        : `${poseName.charAt(0).toUpperCase()}${poseName.substring(1)}`;
+        : capitaliseFirstLetter(poseName);
     option.value = poseName;
     poseDropdown.append(option);
   });
-
-  renderElement.append(poseDropdown);
 
   poseDropdown.value = bird.pose;
   poseDropdown.onchange = (e) => {
@@ -171,6 +168,24 @@ export const renderBird = async (renderElement: HTMLDivElement) => {
       bird.setPose(e.target.value as BirdPose);
     }
   };
+
+  const directionDropdown = document.createElement("select");
+  poseDropdown.name = "Direction";
+  ["left", "right"].forEach((direction) => {
+    const option = document.createElement("option");
+    option.textContent = capitaliseFirstLetter(direction);
+    option.value = direction;
+    directionDropdown.append(option);
+  });
+
+  directionDropdown.value = bird.direction;
+  directionDropdown.onchange = (e) => {
+    if (e.target && e.target instanceof HTMLSelectElement && e.target.value) {
+      bird.setDirection(e.target.value as Direction);
+    }
+  };
+
+  renderElement.append(shinyCheckbox, poseDropdown, directionDropdown);
 
   app.ticker.add((ticker) => {
     bird.updateTime(ticker.deltaMS);

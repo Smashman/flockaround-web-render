@@ -53,6 +53,7 @@ type OneDimensionalOffsets = Offsets<number>;
 type TwoDimensionalOffsets = Offsets<Position>;
 
 type Position = { x: number; y: number };
+export type Direction = "left" | "right";
 
 interface BirdConstructorParams {
   config: BirdConfig;
@@ -82,10 +83,13 @@ export class Bird {
     return this._pose;
   }
 
-  private _position: Position = defaultPosition;
+  private position: Position = defaultPosition;
+  private scale: number = 1;
 
-  get position() {
-    return this._position;
+  private _direction: Direction = "left";
+
+  get direction() {
+    return this._direction;
   }
 
   private headFrame: HeadFrame = defaultValues.headFrame;
@@ -95,7 +99,7 @@ export class Bird {
   movingPoseLabel = defaultValues.movingPoseLabel;
 
   readonly movementAnimationSpeed: number = 10;
-  movementTimer: number = 0;
+  private movementTimer: number = 0;
 
   readonly hasSoaringPose: boolean = false;
 
@@ -107,8 +111,8 @@ export class Bird {
   readonly config: BirdConfig;
   readonly viewfinderDimension: number;
 
-  readonly headTextures: Textures<HeadFrame>;
-  readonly bodyTextures: Textures<BodyFrame>;
+  private readonly headTextures: Textures<HeadFrame>;
+  private readonly bodyTextures: Textures<BodyFrame>;
 
   readonly headFrameWidth: number;
   readonly headFrameHeight: number;
@@ -116,23 +120,23 @@ export class Bird {
   readonly bodyFrameWidth: number;
   readonly bodyFrameHeight: number;
 
-  readonly headGeometry: MeshGeometry;
-  readonly bodyGeometry: MeshGeometry;
+  private readonly headGeometry: MeshGeometry;
+  private readonly bodyGeometry: MeshGeometry;
 
-  readonly headShaders: Shaders;
-  readonly bodyShaders: Shaders;
+  private readonly headShaders: Shaders;
+  private readonly bodyShaders: Shaders;
 
-  readonly headMesh: Mesh<MeshGeometry, Shader>;
-  readonly bodyMesh: Mesh<MeshGeometry, Shader>;
+  private readonly headMesh: Mesh<MeshGeometry, Shader>;
+  private readonly bodyMesh: Mesh<MeshGeometry, Shader>;
 
   readonly headOffset: Position;
   readonly bodyOffset: number;
 
-  readonly frontBackOffsets: OneDimensionalOffsets;
-  readonly soarOffsets: OneDimensionalOffsets;
-  readonly sideOffsets: TwoDimensionalOffsets;
-  readonly movingOffsets: TwoDimensionalOffsets;
-  readonly peckingOffsets: TwoDimensionalOffsets;
+  private readonly frontBackOffsets: OneDimensionalOffsets;
+  private readonly soarOffsets: OneDimensionalOffsets;
+  private readonly sideOffsets: TwoDimensionalOffsets;
+  private readonly movingOffsets: TwoDimensionalOffsets;
+  private readonly peckingOffsets: TwoDimensionalOffsets;
 
   constructor({
     config,
@@ -251,7 +255,7 @@ export class Bird {
     frameCount: number,
   ) {
     const sheetImage = new ImageSource({ resource: sheetElement });
-    const frameWidth = sheetImage.width / frameCount;
+    const frameWidth = Math.floor(sheetImage.width / frameCount);
     const frameHeight = sheetImage.height;
 
     const textures = frameNames.reduce(
@@ -275,13 +279,27 @@ export class Bird {
     return { textures, width: frameWidth, height: frameHeight };
   }
 
+  private directionalValue(value: number) {
+    if (this.direction === "right") {
+      return value * -1;
+    }
+    return value;
+  }
+
   private setScale(scale: number) {
-    this.container.scale = scale;
+    this.scale = scale;
+    this.container.scale.set(this.directionalValue(this.scale), this.scale);
   }
 
   private setPosition(position: Partial<Position>) {
-    this.container.x = position.x || defaultPosition.x;
-    this.container.y = position.y || defaultPosition.y;
+    this.position = {
+      ...defaultPosition,
+      ...position,
+    };
+    this.container.position.set(
+      this.directionalValue(this.position.x),
+      this.position.y,
+    );
   }
 
   private createGeometry(
@@ -491,6 +509,12 @@ export class Bird {
       this.headMesh.shader = this.headShaders.default;
       this.bodyMesh.shader = this.bodyShaders.default;
     }
+  }
+
+  setDirection(direction: Direction) {
+    this._direction = direction;
+    this.setScale(this.scale);
+    this.setPosition(this.position);
   }
 
   updateTime(deltaMS: number) {
