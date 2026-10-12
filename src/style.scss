@@ -1,0 +1,9 @@
+.control-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.bird-web-render.success {
+  padding: 1em;
+  border: 1px solid var(--wiki-content-border-color, black);
+}

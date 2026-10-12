@@ -18,7 +18,14 @@ import type {
   TwoDimensionalBirdConfigDimensionOffsets,
 } from "./types";
 
-const birdPoseNames = ["front", "side", "moving", "back", "soar"] as const;
+const birdPoseNames = [
+  "front",
+  "side",
+  "moving",
+  "back",
+  "soar",
+  "pecking",
+] as const;
 export type BirdPose = (typeof birdPoseNames)[number];
 
 type MovingPoseLabel = "Flying" | "Running" | "Swimming";
@@ -95,13 +102,23 @@ export class Bird {
   private headFrame: HeadFrame = defaultValues.headFrame;
   private bodyFrame: BodyFrame = defaultValues.bodyFrame;
 
-  readonly poseOptions: BirdPose[];
+  get poseOptions(): BirdPose[] {
+    return [
+      "front",
+      "side",
+      "moving",
+      "back",
+      ...(this.hasSoaringPose ? (["soar"] as const) : []),
+      ...(this.hasPeckingPose ? (["pecking"] as const) : []),
+    ];
+  }
   movingPoseLabel = defaultValues.movingPoseLabel;
 
   readonly movementAnimationSpeed: number = 10;
   private movementTimer: number = 0;
 
   readonly hasSoaringPose: boolean = false;
+  readonly hasPeckingPose: boolean = false;
 
   readonly headFrameCount: number = 3;
   readonly bodyFrameCount: number = 5;
@@ -157,9 +174,6 @@ export class Bird {
     if (this.hasSoaringPose) {
       this.headFrameCount = 4;
       this.bodyFrameCount = 6;
-      this.poseOptions = [...birdPoseNames];
-    } else {
-      this.poseOptions = [...birdPoseNames.slice(0, 4)];
     }
 
     this.headOffset = {
@@ -377,6 +391,11 @@ export class Bird {
   }
 
   private setHeadFrame(frame: HeadFrame) {
+    if (frame === "away") {
+      this.setHeadBehind();
+    } else {
+      this.setBodyBehind();
+    }
     this.headGeometry.uvs = new Float32Array(
       Object.values(this.headTextures[frame].uvs),
     );
@@ -429,8 +448,7 @@ export class Bird {
 
   private poseSetters: { [K in BirdPose]: () => void } = {
     side: () => {
-      this.setBodyBehind();
-      this.setHeadFrame("towards");
+      this.setHeadFrame("side");
       this.setBodyFrame("side");
 
       const { scale, position } = this.calculateTwoDimensionScalePosition(
@@ -441,7 +459,6 @@ export class Bird {
       this.setPosition(position);
     },
     front: () => {
-      this.setBodyBehind();
       this.setHeadFrame("towards");
       this.setBodyFrame("towards");
 
@@ -453,7 +470,6 @@ export class Bird {
       this.setPosition({ y: yPosition });
     },
     back: () => {
-      this.setHeadBehind();
       this.setHeadFrame("away");
       this.setBodyFrame("away");
 
@@ -465,7 +481,6 @@ export class Bird {
       this.setPosition({ y: yPosition });
     },
     moving: () => {
-      this.setBodyBehind();
       this.setHeadFrame("side");
       this.setBodyFrame("move1");
 
@@ -477,7 +492,6 @@ export class Bird {
       this.setPosition(position);
     },
     soar: () => {
-      this.setBodyBehind();
       this.setHeadFrame("soar");
       this.setBodyFrame("soar");
 
@@ -487,6 +501,17 @@ export class Bird {
 
       this.setScale(scale);
       this.setPosition({ y: yPosition });
+    },
+    pecking: () => {
+      this.setHeadFrame("side");
+      this.setBodyFrame("side");
+
+      const { scale, position } = this.calculateTwoDimensionScalePosition(
+        this.peckingOffsets,
+      );
+
+      this.setScale(scale);
+      this.setPosition(position);
     },
   };
 
