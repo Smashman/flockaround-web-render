@@ -4,7 +4,7 @@ import { DEBUG_MODE } from "./constants";
 import { createControls } from "./controls";
 import { RenderError } from "./log";
 import type { BirdConfig } from "./types";
-import "./style.scss";
+import "./style.css";
 
 const canvasDimension = 300;
 // In-game camera viewfinder = 45%
