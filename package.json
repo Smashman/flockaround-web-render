@@ -1,18 +1,13 @@
 {
   "name": "flockaround-web-render",
-  "version": "1.0.0",
-  "description": "",
-  "main": "dist/main.js",
   "type": "module",
+  "private": true,
   "scripts": {
     "build": "tsdown",
     "build-watch": "tsdown --watch",
     "serve": "live-server --watch=\"dist/main.js,index.html\"",
     "dev": "concurrently 'pn build-watch' 'pn serve'"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
     "@tsdown/css": "^0.23.1",
