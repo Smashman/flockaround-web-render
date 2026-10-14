@@ -24,3 +24,8 @@ jobs:
         run: pnpm install
       - name: Build with tsdown
         run: pnpm build
+      - name: Upload artifact
+        if: ${{ matrix.node-version == 26 }}
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist
