@@ -13,10 +13,9 @@ WIP project that uses Pixi.js to render [Flock Around](https://store.steampowere
 
 1. `pnpm i`
 2. Copy a bird config from the Flock Around game files into `.config` in `index.html`.
-3. `mkdir img`
-4. Copy the relevant head and body spritesheets from the Flock Around game files into `img`. See the config for the path to the correct files. Place the files in the directory directly. Do not create any subdirectories.
-5. Update `.head` and `.body` `src` attributes to match in `index.html`.
-6. `pnpm dev`
+3. Copy the relevant head and body spritesheets from the Flock Around game files into `img`. See the config for the path to the correct files. Place the files in the directory directly. Do not create any subdirectories.
+4. Update `.head` and `.body` `src` attributes to match in `index.html`.
+5. `pnpm dev`
 
 ## License
 
